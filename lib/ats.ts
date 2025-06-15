@@ -48,6 +48,16 @@ export function filterCandidates(
           if (index < 3) console.log(`    📊 ${value} <= ${condition.$lte} = ${result}`);
           return result;
         }
+        if ("$lt" in condition) {
+          const result = parseFloat(String(value)) < parseFloat(String(condition.$lt));
+          if (index < 3) console.log(`    📊 ${value} < ${condition.$lt} = ${result}`);
+          return result;
+        }
+        if ("$gt" in condition) {
+          const result = parseFloat(String(value)) > parseFloat(String(condition.$gt));
+          if (index < 3) console.log(`    📊 ${value} > ${condition.$gt} = ${result}`);
+          return result;
+        }
         if ("$eq" in condition) {
           const result = value == condition.$eq;
           if (index < 3) console.log(`    📊 ${value} == ${condition.$eq} = ${result}`);

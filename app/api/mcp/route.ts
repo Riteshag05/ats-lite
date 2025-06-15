@@ -23,9 +23,9 @@ export async function POST(req: Request) {
       years_experience: sampleCandidate.years_experience
     };
 
-    // THINK - Enhanced prompt with better synonym handling
+    // THINK - Smart and flexible prompt for natural language understanding
     const plan = await getPlanFromLLM(
-      `You are creating search filters for a candidate database.
+      `You are an intelligent search system for a candidate database. Parse the user's natural language query and create appropriate filters.
 
 User query: "${message}"
 
@@ -34,41 +34,62 @@ Available fields: ${headers.join(", ")}
 Sample candidate data:
 ${JSON.stringify(sampleData, null, 2)}
 
+DATABASE STRUCTURE:
+- Job titles: "Backend Engineer", "DevOps Engineer", "Frontend Engineer", "Mobile Developer", "Full-Stack Developer", "QA Engineer", "Cloud Architect", "Machine Learning Engineer", "Data Scientist", "Product Engineer"
+- Skills: Semicolon-separated technologies like "React;Node.js;Python;AWS;Docker"
+- Locations: Format "City, Country" like "Berlin, Germany" or "San Francisco, USA"
+- Experience: Numeric years like "5", "10", "15"
+
 CRITICAL UNDERSTANDING:
-- Job titles in our data: "Backend Engineer", "DevOps Engineer", "Frontend Engineer", "Mobile Developer", "Full-Stack Developer", "QA Engineer", "Cloud Architect", "Machine Learning Engineer", "Data Scientist", "Product Engineer"
-- Skills are specific technologies like: React, Node.js, Python, AWS, Docker, etc.
-- Locations are in format: "City, Country" like "Berlin, Germany"
+1. TECHNOLOGY vs JOB ROLE:
+   - "React developers" = people who know React → {"skills": "React"}
+   - "Python engineers" = people who know Python → {"skills": "Python"}
+   - "AWS developers" = people who know AWS → {"skills": "AWS"}
+   - "Node.js developers" = people who know Node.js → {"skills": "Node.js"}
 
-SMART MATCHING RULES:
-1. For ROLE queries:
-   - "devops engineers" → {"title": "DevOps Engineer"} (exact match)
-   - "backend engineers" → {"title": "Backend Engineer"} (exact match)  
+2. JOB ROLES (use partial title matching):
+   - "developers" → {"title": "Developer"} (matches "Mobile Developer", "Full-Stack Developer")
+   - "engineers" → {"title": "Engineer"} (matches "Backend Engineer", "DevOps Engineer", etc.)
+   - "backend engineers" → {"title": "Backend Engineer"} (exact match)
    - "mobile developers" → {"title": "Mobile Developer"} (exact match)
-   - "frontend engineers" → {"title": "Frontend Engineer"} (exact match)
-   - "engineers" → {"title": "Engineer"} (partial match for any Engineer role)
-   - "developers" → {"title": "Developer"} (partial match for any Developer role)
 
-2. For TECHNOLOGY queries:
-   - "React developers" → {"skills": "React"} (search in skills field)
-   - "Python engineers" → {"skills": "Python"} (search in skills field)
+3. EXPERIENCE PARSING:
+   - "less experience", "junior", "< 5 years" → {"years_experience": {"$lt": "5"}}
+   - "more experience", "senior", "> 10 years" → {"years_experience": {"$gte": "10"}}
+   - "5+ years", "at least 5" → {"years_experience": {"$gte": "5"}}
+   - "under 3 years" → {"years_experience": {"$lt": "3"}}
+   - "20 years experience" → {"years_experience": {"$gte": "20"}}
+   - "most experience" → no filter, just rank by experience desc
 
-3. For LOCATION queries:
-   - "engineers in Germany" → {"title": "Engineer", "location": "Germany"}
-   - "developers in Berlin" → {"title": "Developer", "location": "Berlin"}
+4. LOCATION PARSING:
+   - "from Berlin", "in Germany", "Berlin developers" → {"location": "Berlin"} or {"location": "Germany"}
 
-4. For EXPERIENCE queries:
-   - "senior engineers" → {"title": "Engineer", "years_experience": {"$gte": "5"}}
+5. COMBINATIONS:
+   - "Senior React developers in Berlin" → {"skills": "React", "location": "Berlin", "years_experience": {"$gte": "5"}}
 
-EXAMPLES:
-- "devops engineers" → {"title": "DevOps Engineer"}
-- "backend engineers in Germany" → {"title": "Backend Engineer", "location": "Germany"}  
-- "mobile developers" → {"title": "Mobile Developer"}
-- "React developers" → {"skills": "React"}
-- "engineers" → {"title": "Engineer"}
+SMART EXAMPLES:
+- "React developers" → {"skills": "React"} ✅
+- "Python engineers" → {"skills": "Python"} ✅
+- "developer with less experience" → {"title": "Developer", "years_experience": {"$lt": "5"}} ✅
+- "senior backend engineers" → {"title": "Backend Engineer", "years_experience": {"$gte": "5"}} ✅
+- "developers" → {"title": "Developer"} ✅
+- "engineers" → {"title": "Engineer"} ✅
+- "mobile dev" → {"title": "Mobile"} ✅
+- "developers with most experience" → {"title": "Developer"} (rank by experience desc) ✅
+- "React Native developer" → {"skills": "React"} ✅
+- "AWS engineers from Berlin" → {"skills": "AWS", "location": "Berlin"} ✅
+
+IMPORTANT RULES:
+- If query mentions a TECHNOLOGY (React, Python, AWS, Node.js, etc.) → use "skills" field
+- If query mentions a JOB TYPE (developer, engineer, architect) → use "title" field with partial matching
+- Use partial matching for titles (don't require exact matches)
+- Extract numbers and convert to appropriate operators
+- Combine multiple criteria when mentioned
+- Default ranking is by years_experience descending
 
 Return only JSON:
 {
-  "filter": { /* use exact title matches when possible */ },
+  "filter": { /* smart field selection based on query type */ },
   "rank": { "primary": "years_experience" }
 }`
     );
