@@ -34,32 +34,43 @@ Available fields: ${headers.join(", ")}
 Sample candidate data:
 ${JSON.stringify(sampleData, null, 2)}
 
-IMPORTANT GUIDELINES:
-- For job roles: Use broad terms in "title" field. "dev" = "developer" = "engineer"
-- For technologies: Use "skills" field (semicolon-separated: "React;Node.js;Python")  
-- For locations: Use "location" field (format: "City, Country")
-- For experience: Use "years_experience" with numeric operators
+CRITICAL UNDERSTANDING:
+- Job titles in our data: "Backend Engineer", "DevOps Engineer", "Frontend Engineer", "Mobile Developer", "Full-Stack Developer", "QA Engineer", "Cloud Architect", "Machine Learning Engineer", "Data Scientist", "Product Engineer"
+- Skills are specific technologies like: React, Node.js, Python, AWS, Docker, etc.
+- Locations are in format: "City, Country" like "Berlin, Germany"
 
-SYNONYM MAPPING:
-- "dev", "developer", "engineer" → search title for "developer" OR "engineer"
-- "backend", "back-end", "server-side" → look for backend technologies in skills
-- "frontend", "front-end", "client-side" → look for frontend technologies in skills
-- "fullstack", "full-end", "full stack" → title contains "Full" or "Stack"
+SMART MATCHING RULES:
+1. For ROLE queries:
+   - "devops engineers" → {"title": "DevOps Engineer"} (exact match)
+   - "backend engineers" → {"title": "Backend Engineer"} (exact match)  
+   - "mobile developers" → {"title": "Mobile Developer"} (exact match)
+   - "frontend engineers" → {"title": "Frontend Engineer"} (exact match)
+   - "engineers" → {"title": "Engineer"} (partial match for any Engineer role)
+   - "developers" → {"title": "Developer"} (partial match for any Developer role)
 
-SMART EXAMPLES:
-- "backend dev" → {"title": "developer"} (matches Mobile Developer, Full-Stack Developer)
-- "backend engineers" → {"title": "engineer"} (matches Backend Engineer, etc.)
+2. For TECHNOLOGY queries:
+   - "React developers" → {"skills": "React"} (search in skills field)
+   - "Python engineers" → {"skills": "Python"} (search in skills field)
+
+3. For LOCATION queries:
+   - "engineers in Germany" → {"title": "Engineer", "location": "Germany"}
+   - "developers in Berlin" → {"title": "Developer", "location": "Berlin"}
+
+4. For EXPERIENCE queries:
+   - "senior engineers" → {"title": "Engineer", "years_experience": {"$gte": "5"}}
+
+EXAMPLES:
+- "devops engineers" → {"title": "DevOps Engineer"}
+- "backend engineers in Germany" → {"title": "Backend Engineer", "location": "Germany"}  
+- "mobile developers" → {"title": "Mobile Developer"}
 - "React developers" → {"skills": "React"}
-- "senior devs" → {"title": "engineer", "years_experience": {"$gte": "5"}}
-- "backend dev in Germany" → {"title": "developer", "location": "Germany"}
-
-STRATEGY: Use the BROADEST reasonable terms to maximize relevant matches.
+- "engineers" → {"title": "Engineer"}
 
 Return only JSON:
 {
-  "filter": { /* use broadest matching terms */ },
+  "filter": { /* use exact title matches when possible */ },
   "rank": { "primary": "years_experience" }
-}`,
+}`
     );
 
     if (!plan) throw new Error("LLM returned invalid JSON");
