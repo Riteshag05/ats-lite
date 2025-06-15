@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 
     // THINK - Smart and flexible prompt for natural language understanding
     const plan = await getPlanFromLLM(
-      `You are an intelligent search system for a candidate database. Parse the user's natural language query and create appropriate filters.
+      `You are an advanced AI recruiter that understands complex natural language queries. Parse any query and create intelligent filters.
 
 User query: "${message}"
 
@@ -34,63 +34,83 @@ Available fields: ${headers.join(", ")}
 Sample candidate data:
 ${JSON.stringify(sampleData, null, 2)}
 
-DATABASE STRUCTURE:
+DATABASE SCHEMA:
 - Job titles: "Backend Engineer", "DevOps Engineer", "Frontend Engineer", "Mobile Developer", "Full-Stack Developer", "QA Engineer", "Cloud Architect", "Machine Learning Engineer", "Data Scientist", "Product Engineer"
-- Skills: Semicolon-separated technologies like "React;Node.js;Python;AWS;Docker"
-- Locations: Format "City, Country" like "Berlin, Germany" or "San Francisco, USA"
-- Experience: Numeric years like "5", "10", "15"
+- Skills: Semicolon-separated like "React;Node.js;Python;AWS;Docker"
+- Locations: "City, Country" format like "Berlin, Germany", "Sydney, Australia"
+- Experience: Numeric years as strings like "5", "10", "15"
+- Work preferences: "Remote", "Hybrid", "Onsite"
+- Notice period: Weeks as strings like "0", "2", "4"
 
-CRITICAL UNDERSTANDING:
-1. TECHNOLOGY vs JOB ROLE:
-   - "React developers" = people who know React → {"skills": "React"}
-   - "Python engineers" = people who know Python → {"skills": "Python"}
-   - "AWS developers" = people who know AWS → {"skills": "AWS"}
-   - "Node.js developers" = people who know Node.js → {"skills": "Node.js"}
+ADVANCED QUERY UNDERSTANDING:
 
-2. JOB ROLES (use partial title matching):
-   - "developers" → {"title": "Developer"} (matches "Mobile Developer", "Full-Stack Developer")
-   - "engineers" → {"title": "Engineer"} (matches "Backend Engineer", "DevOps Engineer", etc.)
-   - "backend engineers" → {"title": "Backend Engineer"} (exact match)
-   - "mobile developers" → {"title": "Mobile Developer"} (exact match)
+1. ROLE INTELLIGENCE:
+   - "developers" → {"title": "Developer"} (matches Mobile Developer, Full-Stack Developer)
+   - "engineers" → {"title": "Engineer"} (matches Backend Engineer, DevOps Engineer, etc.)
+   - "architects" → {"title": "Architect"} (matches Cloud Architect)
+   - "scientists" → {"title": "Scientist"} (matches Data Scientist)
+
+2. TECHNOLOGY SKILLS:
+   - "React developers" → {"skills": "React"}
+   - "Python engineers" → {"skills": "Python"}
+   - "Kubernetes experience" → {"skills": "Kubernetes"}
+   - "AWS experts" → {"skills": "AWS"}
 
 3. EXPERIENCE PARSING:
-   - "less experience", "junior", "< 5 years" → {"years_experience": {"$lt": "5"}}
-   - "more experience", "senior", "> 10 years" → {"years_experience": {"$gte": "10"}}
+   - "1 or 5 years" → {"years_experience": {"$in": ["1", "5"]}}
+   - "less than 5 years", "junior", "< 5" → {"years_experience": {"$lt": "5"}}
+   - "more than 10 years", "senior", "> 10" → {"years_experience": {"$gte": "10"}}
    - "5+ years", "at least 5" → {"years_experience": {"$gte": "5"}}
-   - "under 3 years" → {"years_experience": {"$lt": "3"}}
-   - "20 years experience" → {"years_experience": {"$gte": "20"}}
-   - "most experience" → no filter, just rank by experience desc
+   - "exactly 3 years" → {"years_experience": {"$eq": "3"}}
+   - "between 5 and 10 years" → {"years_experience": {"$gte": "5", "$lte": "10"}}
 
-4. LOCATION PARSING:
-   - "from Berlin", "in Germany", "Berlin developers" → {"location": "Berlin"} or {"location": "Germany"}
+4. LOCATION INTELLIGENCE:
+   - "from Australia" → {"location": "Australia"}
+   - "in Berlin" → {"location": "Berlin"}
+   - "developers from australia" → {"title": "Developer", "location": "Australia"}
 
-5. COMBINATIONS:
-   - "Senior React developers in Berlin" → {"skills": "React", "location": "Berlin", "years_experience": {"$gte": "5"}}
+5. WORK PREFERENCES:
+   - "remote workers" → {"work_preference": "Remote"}
+   - "onsite candidates" → {"work_preference": "Onsite"}
+   - "hybrid workers" → {"work_preference": "Hybrid"}
 
-SMART EXAMPLES:
-- "React developers" → {"skills": "React"} ✅
-- "Python engineers" → {"skills": "Python"} ✅
-- "developer with less experience" → {"title": "Developer", "years_experience": {"$lt": "5"}} ✅
-- "senior backend engineers" → {"title": "Backend Engineer", "years_experience": {"$gte": "5"}} ✅
-- "developers" → {"title": "Developer"} ✅
-- "engineers" → {"title": "Engineer"} ✅
-- "mobile dev" → {"title": "Mobile"} ✅
-- "developers with most experience" → {"title": "Developer"} (rank by experience desc) ✅
-- "React Native developer" → {"skills": "React"} ✅
-- "AWS engineers from Berlin" → {"skills": "AWS", "location": "Berlin"} ✅
+6. AVAILABILITY & URGENCY:
+   - "resigned recently", "available immediately" → {"notice_period_weeks": {"$lte": "2"}}
+   - "can start soon" → {"notice_period_weeks": {"$lte": "4"}}
+   - "long notice period" → {"notice_period_weeks": {"$gte": "8"}}
 
-IMPORTANT RULES:
-- If query mentions a TECHNOLOGY (React, Python, AWS, Node.js, etc.) → use "skills" field
-- If query mentions a JOB TYPE (developer, engineer, architect) → use "title" field with partial matching
-- Use partial matching for titles (don't require exact matches)
-- Extract numbers and convert to appropriate operators
-- Combine multiple criteria when mentioned
+7. COMPLEX COMBINATIONS:
+   - "senior React developers in Berlin" → {"skills": "React", "location": "Berlin", "years_experience": {"$gte": "5"}}
+   - "remote kubernetes engineers with 10+ years" → {"skills": "Kubernetes", "title": "Engineer", "work_preference": "Remote", "years_experience": {"$gte": "10"}}
+
+8. SMART RANKING:
+   - "most experienced" → rank by years_experience desc
+   - "recently active" → rank by last_active desc  
+   - "available soonest" → rank by notice_period_weeks asc
+   - "highest salary" → rank by desired_salary_usd desc
+
+EXAMPLES:
+- "berlin engineers with 1 or 5 years of experience" → {"title": "Engineer", "location": "Berlin", "years_experience": {"$in": ["1", "5"]}}
+- "developers from australia" → {"title": "Developer", "location": "Australia"}
+- "scientists who know python" → {"title": "Scientist", "skills": "Python"}
+- "candidates who resigned recently" → {"notice_period_weeks": {"$lte": "2"}}
+- "remote workers with kubernetes experience" → {"work_preference": "Remote", "skills": "Kubernetes"}
+- "architects in cyprus with 15+ years" → {"title": "Architect", "location": "Cyprus", "years_experience": {"$gte": "15"}}
+- "senior fullstack developers willing to relocate" → {"title": "Full-Stack Developer", "years_experience": {"$gte": "5"}, "willing_to_relocate": "Yes"}
+
+INTELLIGENCE RULES:
+- Extract ALL relevant criteria from the query
+- Use partial matching for job titles
+- Combine multiple conditions when mentioned
+- Handle synonyms and natural language variations
 - Default ranking is by years_experience descending
+- Be flexible with location matching (city or country)
+- Understand urgency and availability context
 
 Return only JSON:
 {
-  "filter": { /* smart field selection based on query type */ },
-  "rank": { "primary": "years_experience" }
+  "filter": { /* intelligent multi-criteria filtering */ },
+  "rank": { "primary": "years_experience" /* or other field based on query */ }
 }`
     );
 

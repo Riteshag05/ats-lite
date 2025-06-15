@@ -58,6 +58,12 @@ export function filterCandidates(
           if (index < 3) console.log(`    📊 ${value} > ${condition.$gt} = ${result}`);
           return result;
         }
+        if ("$in" in condition) {
+          const values = Array.isArray(condition.$in) ? condition.$in : [condition.$in];
+          const result = values.some(val => String(value) === String(val));
+          if (index < 3) console.log(`    📊 ${value} in [${values.join(', ')}] = ${result}`);
+          return result;
+        }
         if ("$eq" in condition) {
           const result = value == condition.$eq;
           if (index < 3) console.log(`    📊 ${value} == ${condition.$eq} = ${result}`);
