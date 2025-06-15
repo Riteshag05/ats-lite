@@ -1,42 +1,53 @@
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY,
 });
 
-export async function getPlanFromLLM(message: string, headers: string[]) {
-  const prompt = `You are a JSON assistant. The user said:\n"${message}"\nGiven the following CSV headers:\n${headers.join(
-    ", "
-  )}\nRespond ONLY with valid JSON that contains:\n\n{\n  "filter": { key: "value" },\n  "rank": { "primary": "years_experience" }\n}`;
-
-  const res = await openai.chat.completions.create({
-    model: "openai/gpt-3.5-turbo", // ✅ OpenRouter model name
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.2,
-  });
-
-  const content = res.choices[0].message?.content || "";
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-
+export async function getPlanFromLLM(prompt: string) {
   try {
-    return JSON.parse(jsonMatch?.[0] ?? "{}");
-  } catch (e) {
-    console.error("❌ Invalid JSON from LLM:", content);
+    const response = await openai.chat.completions.create({
+      model: "openai/gpt-3.5-turbo",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.1,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) throw new Error("No response from LLM");
+
+    return JSON.parse(content);
+  } catch (error) {
+    console.error("❌ LLM Error:", error);
     return null;
   }
 }
 
-export async function getSummaryFromLLM(topCandidates: any[]) {
-  const input = JSON.stringify(topCandidates, null, 2);
+export async function getSummaryFromLLM(candidates: Record<string, unknown>[]) {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "openai/gpt-3.5-turbo",
+      messages: [
+        {
+          role: "user",
+          content: `You are a helpful recruitment assistant. Based on these top candidates, write a brief, professional summary for the recruiter:
 
-  const res = await openai.chat.completions.create({
-   model: "openai/gpt-3.5-turbo", // ✅ OpenRouter model name
-    messages: [
-      { role: "system", content: "You are a helpful ATS assistant." },
-      { role: "user", content: `Summarize these top candidates:\n${input}` },
-    ],
-  });
+${JSON.stringify(candidates, null, 2)}
 
-  return res.choices[0].message?.content || "";
+Keep it concise and highlight key insights like average experience, top skills, and notable candidates.`,
+        },
+      ],
+      temperature: 0.3,
+    });
+
+    return response.choices[0]?.message?.content || "Summary unavailable";
+  } catch (error) {
+    console.error("❌ Summary Error:", error);
+    return "Unable to generate summary at this time.";
+  }
 }

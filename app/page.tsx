@@ -11,13 +11,21 @@ interface TimelineStep {
   id: number;
   title: string;
   status: 'pending' | 'active' | 'complete';
-  data?: any;
+  data?: unknown;
   completedAt?: number; // Track when step completed for stagger
+}
+
+interface Candidate {
+  id: string;
+  full_name: string;
+  title: string;
+  location: string;
+  years_experience: string;
+  skills: string;
 }
 
 export default function HomePage() {
   const {
-    candidates,
     setCandidates,
     message,
     setMessage,
@@ -28,7 +36,7 @@ export default function HomePage() {
     loading,
   } = useATSStore();
 
-  const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [showAllCandidates, setShowAllCandidates] = useState(false);
   const [timelineSteps, setTimelineSteps] = useState<TimelineStep[]>([
     { id: 1, title: "🧠 Think: Analyzing query...", status: 'pending' },
@@ -43,7 +51,7 @@ export default function HomePage() {
       setCandidates(data);
     }
     load();
-  }, []);
+  }, [setCandidates]);
 
   // Reset showAllCandidates when new search is performed
   useEffect(() => {
@@ -54,7 +62,7 @@ export default function HomePage() {
   useEffect(() => {
     setTimelineSteps(prev => {
       const newSteps = [...prev];
-      let currentTime = Date.now();
+      const currentTime = Date.now();
       
       if (loading) {
         // Reset all steps and start with first one active
@@ -180,7 +188,7 @@ export default function HomePage() {
               </div>
               
               <AnimatePresence>
-                {step.data && step.status === 'complete' && (
+                {step.data && step.status === 'complete' ? (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -192,7 +200,7 @@ export default function HomePage() {
                       {JSON.stringify(step.data, null, 2)}
                     </pre>
                   </motion.div>
-                )}
+                ) : null}
               </AnimatePresence>
             </motion.div>
           ))}

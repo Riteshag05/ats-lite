@@ -1,7 +1,26 @@
+interface Candidate {
+  id: string;
+  full_name: string;
+  title: string;
+  location: string;
+  years_experience: string;
+  skills: string;
+  [key: string]: string | number; // Allow additional properties
+}
+
+interface FilterCondition {
+  [key: string]: string | number | { $gte?: string; $lte?: string; $eq?: string };
+}
+
+interface RankPlan {
+  primary: string;
+  tie_breakers?: string[];
+}
+
 export function filterCandidates(
-  filter: Record<string, any>,
-  candidates: any[]
-) {
+  filter: FilterCondition,
+  candidates: Candidate[]
+): Candidate[] {
   console.log("🔍 Filtering with:", filter, "Total candidates:", candidates.length);
   
   if (Object.keys(filter).length === 0) {
@@ -20,12 +39,12 @@ export function filterCandidates(
       // Handle numeric conditions
       if (typeof condition === "object" && condition !== null) {
         if ("$gte" in condition) {
-          const result = parseFloat(value) >= parseFloat(condition.$gte);
+          const result = parseFloat(String(value)) >= parseFloat(String(condition.$gte));
           if (index < 3) console.log(`    📊 ${value} >= ${condition.$gte} = ${result}`);
           return result;
         }
         if ("$lte" in condition) {
-          const result = parseFloat(value) <= parseFloat(condition.$lte);
+          const result = parseFloat(String(value)) <= parseFloat(String(condition.$lte));
           if (index < 3) console.log(`    📊 ${value} <= ${condition.$lte} = ${result}`);
           return result;
         }
@@ -92,9 +111,9 @@ export function filterCandidates(
 }
 
 export function rankCandidates(
-  candidates: any[],
-  rankPlan: { primary: string; tie_breakers?: string[] }
-) {
+  candidates: Candidate[],
+  rankPlan: RankPlan
+): Candidate[] {
   if (!candidates.length) return [];
   
   console.log("🏆 Ranking", candidates.length, "candidates by", rankPlan.primary);
@@ -105,9 +124,9 @@ export function rankCandidates(
     const primaryB = b[rankPlan.primary];
     
     // Handle numeric fields (like years_experience)
-    if (!isNaN(primaryA) && !isNaN(primaryB)) {
-      const numA = parseFloat(primaryA);
-      const numB = parseFloat(primaryB);
+    if (!isNaN(Number(primaryA)) && !isNaN(Number(primaryB))) {
+      const numA = parseFloat(String(primaryA));
+      const numB = parseFloat(String(primaryB));
       if (numA !== numB) {
         return numB - numA; // Descending order (most experience first)
       }
@@ -127,9 +146,9 @@ export function rankCandidates(
         const valueA = a[tieBreaker];
         const valueB = b[tieBreaker];
         
-        if (!isNaN(valueA) && !isNaN(valueB)) {
-          const numA = parseFloat(valueA);
-          const numB = parseFloat(valueB);
+        if (!isNaN(Number(valueA)) && !isNaN(Number(valueB))) {
+          const numA = parseFloat(String(valueA));
+          const numB = parseFloat(String(valueB));
           if (numA !== numB) {
             return numB - numA;
           }
@@ -148,7 +167,7 @@ export function rankCandidates(
   });
 }
 
-export function aggregateStats(candidates: any[]) {
+export function aggregateStats(candidates: Candidate[]) {
   if (!candidates.length) {
     return { count: 0, avg_experience: 0, top_skills: [] };
   }
@@ -157,7 +176,7 @@ export function aggregateStats(candidates: any[]) {
   
   // Calculate average years of experience
   const totalExperience = candidates.reduce((sum, candidate) => {
-    const exp = parseFloat(candidate.years_experience) || 0;
+    const exp = parseFloat(String(candidate.years_experience)) || 0;
     return sum + exp;
   }, 0);
   const avg_experience = Math.round((totalExperience / count) * 10) / 10;

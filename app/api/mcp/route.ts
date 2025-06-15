@@ -60,7 +60,6 @@ Return only JSON:
   "filter": { /* use broadest matching terms */ },
   "rank": { "primary": "years_experience" }
 }`,
-      headers
     );
 
     if (!plan) throw new Error("LLM returned invalid JSON");
