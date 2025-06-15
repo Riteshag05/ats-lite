@@ -34,78 +34,84 @@ Available fields: ${headers.join(", ")}
 Sample candidate data:
 ${JSON.stringify(sampleData, null, 2)}
 
-DATABASE SCHEMA:
-- Job titles: "Backend Engineer", "DevOps Engineer", "Frontend Engineer", "Mobile Developer", "Full-Stack Developer", "QA Engineer", "Cloud Architect", "Machine Learning Engineer", "Data Scientist", "Product Engineer"
-- Skills: Semicolon-separated like "React;Node.js;Python;AWS;Docker"
-- Locations: "City, Country" format like "Berlin, Germany", "Sydney, Australia"
-- Experience: Numeric years as strings like "5", "10", "15"
-- Work preferences: "Remote", "Hybrid", "Onsite"
-- Notice period: Weeks as strings like "0", "2", "4"
+EXACT JOB TITLES IN OUR DATABASE:
+- "Backend Engineer" (NOT "Backend Developer")
+- "Frontend Engineer" (NOT "Frontend Developer") 
+- "DevOps Engineer"
+- "QA Engineer"
+- "Machine Learning Engineer"
+- "Product Engineer"
+- "Mobile Developer"
+- "Full‑Stack Developer" (with en-dash ‑, NOT hyphen -)
+- "Cloud Architect"
+- "Data Scientist"
 
-ADVANCED QUERY UNDERSTANDING:
+CRITICAL JOB TITLE MAPPING:
+1. BACKEND QUERIES:
+   - "backend developers", "backend devs", "backend engineers" → {"title": "Backend"}
+   - "backend" → {"title": "Backend"}
 
-1. ROLE INTELLIGENCE:
-   - "developers" → {"title": "Developer"} (matches Mobile Developer, Full-Stack Developer)
-   - "engineers" → {"title": "Engineer"} (matches Backend Engineer, DevOps Engineer, etc.)
-   - "architects" → {"title": "Architect"} (matches Cloud Architect)
-   - "scientists" → {"title": "Scientist"} (matches Data Scientist)
+2. FRONTEND QUERIES:
+   - "frontend developers", "frontend devs", "frontend engineers" → {"title": "Frontend"}
+   - "frontend" → {"title": "Frontend"}
 
-2. TECHNOLOGY SKILLS:
+3. FULLSTACK QUERIES:
+   - "fullstack developers", "full stack developers", "full-stack developers" → {"title": "Full"}
+   - "fullstack", "full stack" → {"title": "Full"}
+
+4. MOBILE QUERIES:
+   - "mobile developers", "mobile devs", "mobile engineers" → {"title": "Mobile"}
+   - "mobile" → {"title": "Mobile"}
+
+5. DEVOPS QUERIES:
+   - "devops engineers", "devops developers", "devops" → {"title": "DevOps"}
+
+6. GENERIC QUERIES:
+   - "developers" → {"title": "Developer"} (matches Mobile Developer, Full‑Stack Developer)
+   - "engineers" → {"title": "Engineer"} (matches all Engineer titles)
+   - "architects" → {"title": "Architect"}
+   - "scientists" → {"title": "Scientist"}
+
+7. TECHNOLOGY SKILLS:
    - "React developers" → {"skills": "React"}
    - "Python engineers" → {"skills": "Python"}
-   - "Kubernetes experience" → {"skills": "Kubernetes"}
    - "AWS experts" → {"skills": "AWS"}
 
-3. EXPERIENCE PARSING:
+8. EXPERIENCE PARSING:
    - "1 or 5 years" → {"years_experience": {"$in": ["1", "5"]}}
    - "less than 5 years", "junior", "< 5" → {"years_experience": {"$lt": "5"}}
    - "more than 10 years", "senior", "> 10" → {"years_experience": {"$gte": "10"}}
-   - "5+ years", "at least 5" → {"years_experience": {"$gte": "5"}}
-   - "exactly 3 years" → {"years_experience": {"$eq": "3"}}
    - "between 5 and 10 years" → {"years_experience": {"$gte": "5", "$lte": "10"}}
+   - "exactly 20 years" → {"years_experience": {"$eq": "20"}}
 
-4. LOCATION INTELLIGENCE:
-   - "from Australia" → {"location": "Australia"}
-   - "in Berlin" → {"location": "Berlin"}
-   - "developers from australia" → {"title": "Developer", "location": "Australia"}
+9. LOCATION INTELLIGENCE:
+   - "from Australia", "in Berlin" → {"location": "Australia"}, {"location": "Berlin"}
 
-5. WORK PREFERENCES:
-   - "remote workers" → {"work_preference": "Remote"}
-   - "onsite candidates" → {"work_preference": "Onsite"}
-   - "hybrid workers" → {"work_preference": "Hybrid"}
+10. WORK PREFERENCES:
+    - "remote workers" → {"work_preference": "Remote"}
+    - "onsite candidates" → {"work_preference": "Onsite"}
 
-6. AVAILABILITY & URGENCY:
-   - "resigned recently", "available immediately" → {"notice_period_weeks": {"$lte": "2"}}
-   - "can start soon" → {"notice_period_weeks": {"$lte": "4"}}
-   - "long notice period" → {"notice_period_weeks": {"$gte": "8"}}
+11. AVAILABILITY:
+    - "available immediately" → {"notice_period_weeks": "0"}
+    - "resigned recently" → {"notice_period_weeks": {"$lte": "2"}}
 
-7. COMPLEX COMBINATIONS:
-   - "senior React developers in Berlin" → {"skills": "React", "location": "Berlin", "years_experience": {"$gte": "5"}}
-   - "remote kubernetes engineers with 10+ years" → {"skills": "Kubernetes", "title": "Engineer", "work_preference": "Remote", "years_experience": {"$gte": "10"}}
+SMART EXAMPLES:
+- "backend developers" → {"title": "Backend"} ✅
+- "frontend engineers" → {"title": "Frontend"} ✅  
+- "fullstack developers" → {"title": "Full"} ✅
+- "mobile devs" → {"title": "Mobile"} ✅
+- "software developers" → {"title": "Developer"} ✅
+- "sde" → {"title": "Engineer"} ✅
+- "React developers" → {"skills": "React"} ✅
+- "senior backend engineers" → {"title": "Backend", "years_experience": {"$gte": "10"}} ✅
+- "remote python developers" → {"skills": "Python", "work_preference": "Remote"} ✅
 
-8. SMART RANKING:
-   - "most experienced" → rank by years_experience desc
-   - "recently active" → rank by last_active desc  
-   - "available soonest" → rank by notice_period_weeks asc
-   - "highest salary" → rank by desired_salary_usd desc
-
-EXAMPLES:
-- "berlin engineers with 1 or 5 years of experience" → {"title": "Engineer", "location": "Berlin", "years_experience": {"$in": ["1", "5"]}}
-- "developers from australia" → {"title": "Developer", "location": "Australia"}
-- "scientists who know python" → {"title": "Scientist", "skills": "Python"}
-- "candidates who resigned recently" → {"notice_period_weeks": {"$lte": "2"}}
-- "remote workers with kubernetes experience" → {"work_preference": "Remote", "skills": "Kubernetes"}
-- "architects in cyprus with 15+ years" → {"title": "Architect", "location": "Cyprus", "years_experience": {"$gte": "15"}}
-- "senior fullstack developers willing to relocate" → {"title": "Full-Stack Developer", "years_experience": {"$gte": "5"}, "willing_to_relocate": "Yes"}
-
-INTELLIGENCE RULES:
-- Extract ALL relevant criteria from the query
-- Use partial matching for job titles
-- Combine multiple conditions when mentioned
-- Handle synonyms and natural language variations
-- Default ranking is by years_experience descending
-- Be flexible with location matching (city or country)
-- Understand urgency and availability context
+CRITICAL RULES:
+- Use PARTIAL matching for titles (Backend matches "Backend Engineer")
+- Developer/Engineer are interchangeable in queries but map to our exact titles
+- Handle character variations (hyphen vs en-dash)
+- Extract ALL criteria from complex queries
+- Default ranking by years_experience descending
 
 Return only JSON:
 {
