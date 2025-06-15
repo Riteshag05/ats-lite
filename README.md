@@ -1,10 +1,10 @@
-# ATS-Lite 🤖
+# ATS-Lite 
 
 **Watch the ATS Think** - A transparent AI recruitment assistant that shows its thinking process in real-time.
 
 ## ✨ Features Completed
 
-### 🎯 **Core Assignment Requirements**
+###  **Core Assignment Requirements**
 - ✅ **Pre-loaded CSV**: 50 candidate records with realistic data
 - ✅ **Natural Language Chat**: Type queries like "backend dev in Germany" or "React engineers"
 - ✅ **Explicit MCP Loop**: Think → Act → Act → Speak with full transparency
@@ -15,14 +15,14 @@
 - ✅ **Keyboard Shortcut**: ⌘/Ctrl + Enter to search
 - ✅ **Jest Test**: Exact requirement met (`React dev, Cyprus, sort by experience desc`)
 
-### 🚀 **Enhanced Features**
+###  **Enhanced Features**
 - ✅ **Smart Synonym Matching**: "dev" = "developer" = "engineer" 
 - ✅ **Streaming Text**: AI summary appears with typewriter effect
 - ✅ **Progress Animations**: Timeline steps fade in one by one
 - ✅ **Robust Error Handling**: Graceful fallbacks for LLM failures
 - ✅ **Flexible Search**: Handles variations like "backend dev" vs "backend developer"
 
-## 🎨 **UI & Animation**
+##  **UI & Animation**
 
 - **Timeline Sidebar**: Real-time MCP workflow visualization with stagger animations
 - **Smart Progress**: Steps complete in sequence: Think → Filter → Rank → Speak
@@ -30,7 +30,7 @@
 - **Streaming Summary**: AI responses appear character-by-character
 - **Loading States**: Progress bars and pulse animations
 
-## 📊 **Search Intelligence**
+##  **Search Intelligence**
 
 The LLM has been trained to handle:
 - **Synonyms**: "dev" = "developer" = "engineer"
@@ -45,8 +45,16 @@ The LLM has been trained to handle:
 → Finds: Mobile Developers in Berlin
 → Matches broader developer roles
 ```
+##  Environment Variables
 
-## 🧪 **Testing**
+Create a `.env.local` file in the root directory and add:
+
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+
+You can get a free API key from https://openrouter.ai
+
+
+##  **Testing**
 
 ```bash
 npm test
@@ -54,7 +62,7 @@ npm test
 
 Required test passes: **"React dev, Cyprus, sort by experience desc"** with candidate #12 above #5.
 
-## 🚀 **Quick Start**
+##  **Quick Start**
 
 ```bash
 # Install dependencies
@@ -70,7 +78,7 @@ npm run dev
 # Open http://localhost:3000
 ```
 
-## 🔧 **Technical Stack**
+##  **Technical Stack**
 
 - **Frontend**: Next.js 15, React 19, TypeScript
 - **Styling**: Tailwind CSS v4
@@ -79,7 +87,7 @@ npm run dev
 - **Testing**: Jest with React Testing Library
 - **AI**: OpenRouter API (GPT-3.5-turbo)
 
-## 🎯 **Search Examples**
+##  **Search Examples**
 
 Try these queries to see the enhanced synonym matching:
 
@@ -89,7 +97,7 @@ Try these queries to see the enhanced synonym matching:
 - `frontend devs in Berlin` (location + role matching)
 - `engineers with 10+ years` (experience filtering)
 
-## 📈 **Assignment Completion: 100%**
+##  **Assignment Completion: 100%**
 
 All requirements met plus enhancements:
 - ✅ Explicit MCP workflow transparency
