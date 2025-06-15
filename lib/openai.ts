@@ -8,7 +8,7 @@ const openai = new OpenAI({
 export async function getPlanFromLLM(prompt: string) {
   try {
     const response = await openai.chat.completions.create({
-      model: "microsoft/phi-3-mini-128k-instruct:free",
+      model: "qwen/qwen3-30b-a3b:free",
       messages: [
         {
           role: "user",
@@ -31,7 +31,7 @@ export async function getPlanFromLLM(prompt: string) {
 export async function getSummaryFromLLM(candidates: Record<string, unknown>[]) {
   try {
     const response = await openai.chat.completions.create({
-      model: "microsoft/phi-3-mini-128k-instruct:free",
+      model: "qwen/qwen3-30b-a3b:free",
       messages: [
         {
           role: "user",
