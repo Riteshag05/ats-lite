@@ -74,6 +74,16 @@ function createFallbackPlan(message: string) {
   return { filter, rank };
 }
 
+// Simple summary without LLM
+function createSimpleSummary(candidates: any[]) {
+  if (candidates.length === 0) return "No candidates found matching your criteria.";
+  
+  const avgExp = Math.round(candidates.reduce((sum, c) => sum + parseInt(c.years_experience), 0) / candidates.length);
+  const topCandidate = candidates[0];
+  
+  return `Found ${candidates.length} candidate(s) with an average of ${avgExp} years experience. Top candidate: ${topCandidate.full_name} (${topCandidate.title}, ${topCandidate.years_experience} years experience).`;
+}
+
 export async function POST(req: Request) {
   try {
     const { message } = await req.json();
@@ -94,7 +104,8 @@ export async function POST(req: Request) {
       years_experience: sampleCandidate.years_experience
     };
 
-    // THINK - Smart and flexible prompt for natural language understanding
+    // THINK - Try LLM first (as required by assignment), fallback if it fails
+    console.log("🧠 Attempting LLM call for THINK phase...");
     const plan = await getPlanFromLLM(
       `Parse this query and create filters for a candidate database.
 
@@ -127,6 +138,8 @@ Return JSON:
     if (!plan) {
       console.log("🔄 LLM failed, using fallback logic");
       finalPlan = createFallbackPlan(message);
+    } else {
+      console.log("✅ LLM successfully generated plan");
     }
 
     // ACT
@@ -139,10 +152,19 @@ Return JSON:
     console.log("🎯 Filtered count:", filtered.length);
     console.log("🏆 Ranked IDs:", ranked.map((c) => c.id));
 
-    // SPEAK - Only generate summary if we have results
+    // SPEAK - Try LLM first (as required by assignment), fallback if it fails
     let summary = "";
     if (top5.length > 0) {
-      summary = await getSummaryFromLLM(top5);
+      console.log("💬 Attempting LLM call for SPEAK phase...");
+      const llmSummary = await getSummaryFromLLM(top5);
+      
+      if (llmSummary && llmSummary !== "Unable to generate summary at this time.") {
+        summary = llmSummary;
+        console.log("✅ LLM successfully generated summary");
+      } else {
+        console.log("🔄 LLM summary failed, using fallback");
+        summary = createSimpleSummary(top5);
+      }
     } else {
       summary = `No candidates found matching your criteria. The search looked for candidates with: ${JSON.stringify(finalPlan.filter)}`;
     }
