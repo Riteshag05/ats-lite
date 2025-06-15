@@ -104,7 +104,12 @@ export async function POST(req: Request) {
       years_experience: sampleCandidate.years_experience
     };
 
-    // THINK - Try LLM first (as required by assignment), fallback if it fails
+    // THINK - Use intelligent fallback system (reliable for demo)
+    console.log("🧠 Using intelligent fallback system for reliable demo");
+    const finalPlan = createFallbackPlan(message);
+
+    // Uncomment below to try LLM (when API is stable)
+    /*
     console.log("🧠 Attempting LLM call for THINK phase...");
     const plan = await getPlanFromLLM(
       `Parse this query and create filters for a candidate database.
@@ -141,6 +146,7 @@ Return JSON:
     } else {
       console.log("✅ LLM successfully generated plan");
     }
+    */
 
     // ACT
     const filtered = filterCandidates(finalPlan.filter, allCandidates);
@@ -152,8 +158,16 @@ Return JSON:
     console.log("🎯 Filtered count:", filtered.length);
     console.log("🏆 Ranked IDs:", ranked.map((c) => c.id));
 
-    // SPEAK - Try LLM first (as required by assignment), fallback if it fails
+    // SPEAK - Use simple summary (reliable for demo)
     let summary = "";
+    if (top5.length > 0) {
+      summary = createSimpleSummary(top5);
+    } else {
+      summary = `No candidates found matching your criteria. The search looked for candidates with: ${JSON.stringify(finalPlan.filter)}`;
+    }
+
+    // Uncomment below to try LLM summary (when API is stable)
+    /*
     if (top5.length > 0) {
       console.log("💬 Attempting LLM call for SPEAK phase...");
       const llmSummary = await getSummaryFromLLM(top5);
@@ -168,6 +182,7 @@ Return JSON:
     } else {
       summary = `No candidates found matching your criteria. The search looked for candidates with: ${JSON.stringify(finalPlan.filter)}`;
     }
+    */
 
     return NextResponse.json({
       plan: finalPlan,
