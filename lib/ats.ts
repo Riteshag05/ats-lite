@@ -69,6 +69,16 @@ export function filterCandidates(
           if (index < 3) console.log(`    📊 ${value} == ${condition.$eq} = ${result}`);
           return result;
         }
+        if ("$ne" in condition) {
+          const result = value != condition.$ne;
+          if (index < 3) console.log(`    📊 ${value} != ${condition.$ne} = ${result}`);
+          return result;
+        }
+        if ("$exists" in condition) {
+          const result = condition.$exists ? (value !== undefined && value !== null && value !== "") : (value === undefined || value === null || value === "");
+          if (index < 3) console.log(`    📊 ${key} exists = ${result}`);
+          return result;
+        }
         return false;
       }
 
@@ -83,6 +93,31 @@ export function filterCandidates(
           const result = valuesArray.some(val => val.includes(conditionStr));
           if (index < 3) console.log(`    🔍 Skills: [${valuesArray.join(', ')}] includes "${conditionStr}" = ${result}`);
           return result;
+        }
+        
+        // Smart geography matching for location field
+        if (key === 'location') {
+          // Handle continent-level searches
+          if (conditionStr === 'africa') {
+            const result = valueStr.includes('south africa') || valueStr.includes('nigeria') || valueStr.includes('egypt');
+            if (index < 3) console.log(`    🌍 Location: "${valueStr}" is in Africa = ${result}`);
+            return result;
+          }
+          if (conditionStr === 'europe') {
+            const result = valueStr.includes('germany') || valueStr.includes('uk') || valueStr.includes('sweden') || valueStr.includes('london');
+            if (index < 3) console.log(`    🌍 Location: "${valueStr}" is in Europe = ${result}`);
+            return result;
+          }
+          if (conditionStr === 'asia') {
+            const result = valueStr.includes('india') || valueStr.includes('japan') || valueStr.includes('cyprus') || valueStr.includes('bangalore') || valueStr.includes('tokyo') || valueStr.includes('nicosia');
+            if (index < 3) console.log(`    🌍 Location: "${valueStr}" is in Asia = ${result}`);
+            return result;
+          }
+          if (conditionStr === 'usa' || conditionStr === 'america') {
+            const result = valueStr.includes('usa') || valueStr.includes('san francisco') || valueStr.includes('new york');
+            if (index < 3) console.log(`    🌍 Location: "${valueStr}" is in USA = ${result}`);
+            return result;
+          }
         }
         
         // Regular string matching

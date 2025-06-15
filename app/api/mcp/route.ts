@@ -50,6 +50,10 @@ CRITICAL JOB TITLE MAPPING:
 1. BACKEND QUERIES:
    - "backend developers", "backend devs", "backend engineers" → {"title": "Backend"}
    - "backend" → {"title": "Backend"}
+   - "backend engineers with AWS", "backend developers with Python" → {"skills": "AWS"} or {"skills": "Python"} (SKILL ONLY, no title filter)
+   - When role + skill mentioned together, IGNORE the role and focus ONLY on the skill
+   - CRITICAL: For "backend engineers with [skill]" → search {"skills": "[skill]"} + include Backend Engineers AND DevOps Engineers
+   - DevOps Engineers do backend infrastructure work, so include them in backend searches with skills
 
 2. FRONTEND QUERIES:
    - "frontend developers", "frontend devs", "frontend engineers" → {"title": "Frontend"}
@@ -84,34 +88,52 @@ CRITICAL JOB TITLE MAPPING:
    - "between 5 and 10 years" → {"years_experience": {"$gte": "5", "$lte": "10"}}
    - "exactly 20 years" → {"years_experience": {"$eq": "20"}}
 
-9. LOCATION INTELLIGENCE:
-   - "from Australia", "in Berlin" → {"location": "Australia"}, {"location": "Berlin"}
+9. SMART GEOGRAPHY UNDERSTANDING:
+   - "Africa" → {"location": "Africa"} (matches South Africa, Nigeria, Egypt)
+   - "Europe" → {"location": "Europe"} (matches Germany, UK, Sweden, etc.)
+   - "Asia" → {"location": "Asia"} (matches India, Japan, Cyprus, etc.)
+   - "America" or "USA" → {"location": "USA"} (matches San Francisco, New York)
+   - "Australia" → {"location": "Australia"} (matches Sydney, Australia)
+   - "Berlin" → {"location": "Berlin"}
+   - "Germany" → {"location": "Germany"}
+   - "Nigeria" → {"location": "Nigeria"}
+   - "South Africa" → {"location": "South Africa"}
 
-10. WORK PREFERENCES:
+10. SALARY INTELLIGENCE:
+    - "salary < 50k", "under 50k", "less than 50000" → {"desired_salary_usd": {"$lt": "50000"}}
+    - "salary > 100k", "over 100k", "more than 100000" → {"desired_salary_usd": {"$gte": "100000"}}
+    - "salary between 50k and 100k" → {"desired_salary_usd": {"$gte": "50000", "$lte": "100000"}}
+    - "high salary", "highest paid" → rank by desired_salary_usd desc
+    - "low salary", "budget friendly" → {"desired_salary_usd": {"$lt": "80000"}}
+
+11. WORK PREFERENCES:
     - "remote workers" → {"work_preference": "Remote"}
     - "onsite candidates" → {"work_preference": "Onsite"}
 
-11. AVAILABILITY:
+12. AVAILABILITY:
     - "available immediately" → {"notice_period_weeks": "0"}
     - "resigned recently" → {"notice_period_weeks": {"$lte": "2"}}
 
 SMART EXAMPLES:
 - "backend developers" → {"title": "Backend"} ✅
-- "frontend engineers" → {"title": "Frontend"} ✅  
-- "fullstack developers" → {"title": "Full"} ✅
-- "mobile devs" → {"title": "Mobile"} ✅
-- "software developers" → {"title": "Developer"} ✅
-- "sde" → {"title": "Engineer"} ✅
-- "React developers" → {"skills": "React"} ✅
-- "senior backend engineers" → {"title": "Backend", "years_experience": {"$gte": "10"}} ✅
+- "backend engineers with AWS" → {"skills": "AWS"} (SKILL ONLY - finds Backend Engineers, DevOps Engineers, etc.) ✅
+- "frontend developers with React" → {"skills": "React"} (SKILL ONLY - finds Frontend Engineers, Full-Stack Developers, etc.) ✅
+- "developers in Africa" → {"title": "Developer", "location": "Africa"} ✅
+- "engineers with salary < 50k" → {"title": "Engineer", "desired_salary_usd": {"$lt": "50000"}} ✅
+- "senior React developers in Berlin" → {"skills": "React", "location": "Berlin", "years_experience": {"$gte": "10"}} ✅
 - "remote python developers" → {"skills": "Python", "work_preference": "Remote"} ✅
 
-CRITICAL RULES:
+CRITICAL INTELLIGENCE RULES:
 - Use PARTIAL matching for titles (Backend matches "Backend Engineer")
-- Developer/Engineer are interchangeable in queries but map to our exact titles
-- Handle character variations (hyphen vs en-dash)
+- For backend searches, consider DevOps Engineers as they do backend work
+- Geography: Africa = South Africa + Nigeria + Egypt, Europe = Germany + UK + Sweden, etc.
+- Salary: Handle k notation (50k = 50000), understand ranges and comparisons
 - Extract ALL criteria from complex queries
-- Default ranking by years_experience descending
+- Default ranking by years_experience descending unless salary mentioned
+- Be flexible with location matching (continent, country, or city)
+- Understand job role relationships (DevOps does backend, Full-Stack does both)
+- SKILL PRIORITY: When query mentions both role AND skill (e.g. "backend engineers with AWS"), prioritize the SKILL over the role title
+- For skill-based queries, cast a wide net to include all relevant roles
 
 Return only JSON:
 {
