@@ -3,6 +3,77 @@ import { filterCandidates, rankCandidates } from "@/lib/ats";
 import { loadCandidates } from "@/lib/csv";
 import { getPlanFromLLM, getSummaryFromLLM } from "@/lib/openai"; // ✅ Correct import
 
+// Fallback function when LLM fails
+function createFallbackPlan(message: string) {
+  const query = message.toLowerCase();
+  let filter: any = {};
+  let rank = { primary: "years_experience" };
+
+  // Basic keyword matching
+  if (query.includes("backend")) {
+    if (query.includes("aws") || query.includes("python") || query.includes("java")) {
+      // Extract skill if mentioned with backend
+      if (query.includes("aws")) filter.skills = "AWS";
+      else if (query.includes("python")) filter.skills = "Python";
+      else if (query.includes("java")) filter.skills = "Java";
+    } else {
+      filter.title = "Backend";
+    }
+  } else if (query.includes("frontend")) {
+    if (query.includes("react") || query.includes("vue") || query.includes("angular")) {
+      if (query.includes("react")) filter.skills = "React";
+      else if (query.includes("vue")) filter.skills = "Vue";
+      else if (query.includes("angular")) filter.skills = "Angular";
+    } else {
+      filter.title = "Frontend";
+    }
+  } else if (query.includes("mobile")) {
+    filter.title = "Mobile";
+  } else if (query.includes("devops")) {
+    filter.title = "DevOps";
+  } else if (query.includes("fullstack") || query.includes("full stack")) {
+    filter.title = "Full";
+  } else if (query.includes("developers")) {
+    filter.title = "Developer";
+  } else if (query.includes("engineers")) {
+    filter.title = "Engineer";
+  }
+
+  // Technology skills
+  if (query.includes("react") && !filter.skills) filter.skills = "React";
+  if (query.includes("python") && !filter.skills) filter.skills = "Python";
+  if (query.includes("aws") && !filter.skills) filter.skills = "AWS";
+  if (query.includes("javascript") && !filter.skills) filter.skills = "JavaScript";
+
+  // Location
+  if (query.includes("africa")) filter.location = "Africa";
+  if (query.includes("europe")) filter.location = "Europe";
+  if (query.includes("asia")) filter.location = "Asia";
+  if (query.includes("berlin")) filter.location = "Berlin";
+  if (query.includes("germany")) filter.location = "Germany";
+  if (query.includes("nigeria")) filter.location = "Nigeria";
+
+  // Experience
+  if (query.includes("senior") || query.includes("> 10") || query.includes("10+")) {
+    filter.years_experience = { $gte: "10" };
+  }
+  if (query.includes("junior") || query.includes("< 5")) {
+    filter.years_experience = { $lt: "5" };
+  }
+
+  // Salary
+  if (query.includes("salary") || query.includes("paid")) {
+    if (query.includes("highest") || query.includes("most")) {
+      rank.primary = "desired_salary_usd";
+    } else if (query.includes("< 50") || query.includes("under 50")) {
+      filter.desired_salary_usd = { $lt: "50000" };
+    }
+  }
+
+  console.log("🔄 Fallback plan created:", { filter, rank });
+  return { filter, rank };
+}
+
 export async function POST(req: Request) {
   try {
     const { message } = await req.json();
@@ -51,15 +122,20 @@ Return JSON:
 {"filter": {}, "rank": {"primary": "years_experience"}}`
     );
 
-    if (!plan) throw new Error("LLM returned invalid JSON");
+    // Fallback if LLM fails - create basic filters
+    let finalPlan = plan;
+    if (!plan) {
+      console.log("🔄 LLM failed, using fallback logic");
+      finalPlan = createFallbackPlan(message);
+    }
 
     // ACT
-    const filtered = filterCandidates(plan.filter, allCandidates);
-    const ranked = rankCandidates(filtered, plan.rank);
+    const filtered = filterCandidates(finalPlan.filter, allCandidates);
+    const ranked = rankCandidates(filtered, finalPlan.rank);
     const top5 = ranked.slice(0, 5);
 
     // ✅ Debug Logs
-    console.log("🧠 MCP plan:", plan);
+    console.log("🧠 MCP plan:", finalPlan);
     console.log("🎯 Filtered count:", filtered.length);
     console.log("🏆 Ranked IDs:", ranked.map((c) => c.id));
 
@@ -68,11 +144,11 @@ Return JSON:
     if (top5.length > 0) {
       summary = await getSummaryFromLLM(top5);
     } else {
-      summary = `No candidates found matching your criteria. The search looked for candidates with: ${JSON.stringify(plan.filter)}`;
+      summary = `No candidates found matching your criteria. The search looked for candidates with: ${JSON.stringify(finalPlan.filter)}`;
     }
 
     return NextResponse.json({
-      plan,
+      plan: finalPlan,
       filtered,
       ranked,
       summary,
