@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { filterCandidates, rankCandidates } from "@/lib/ats";
 import { loadCandidates } from "@/lib/csv";
-import { getPlanFromLLM, getSummaryFromLLM } from "@/lib/openai"; // ✅ Correct import
+// import { getPlanFromLLM, getSummaryFromLLM } from "@/lib/openai"; // ✅ Commented out for stable demo
 
 // Fallback function when LLM fails
 function createFallbackPlan(message: string) {
   const query = message.toLowerCase();
-  let filter: any = {};
-  let rank = { primary: "years_experience" };
+  const filter: Record<string, string | { $gte?: string; $lt?: string; $ne?: string }> = {};
+  const rank = { primary: "years_experience" };
 
   // Basic keyword matching
   if (query.includes("backend")) {
@@ -75,10 +75,10 @@ function createFallbackPlan(message: string) {
 }
 
 // Simple summary without LLM
-function createSimpleSummary(candidates: any[]) {
+function createSimpleSummary(candidates: Record<string, unknown>[]) {
   if (candidates.length === 0) return "No candidates found matching your criteria.";
   
-  const avgExp = Math.round(candidates.reduce((sum, c) => sum + parseInt(c.years_experience), 0) / candidates.length);
+  const avgExp = Math.round(candidates.reduce((sum, c) => sum + parseInt(c.years_experience as string), 0) / candidates.length);
   const topCandidate = candidates[0];
   
   return `Found ${candidates.length} candidate(s) with an average of ${avgExp} years experience. Top candidate: ${topCandidate.full_name} (${topCandidate.title}, ${topCandidate.years_experience} years experience).`;
@@ -93,9 +93,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No candidates found" }, { status: 500 });
     }
 
-    const headers = Object.keys(allCandidates[0]);
+    // THINK - Use intelligent fallback system (reliable for demo)
+    console.log("🧠 Using intelligent fallback system for reliable demo");
+    const finalPlan = createFallbackPlan(message);
 
-    // Show sample data to help LLM understand the structure
+    // Uncomment below to try LLM (when API is stable)
+    /*
+    const headers = Object.keys(allCandidates[0]);
     const sampleCandidate = allCandidates[0];
     const sampleData = {
       title: sampleCandidate.title,
@@ -104,12 +108,6 @@ export async function POST(req: Request) {
       years_experience: sampleCandidate.years_experience
     };
 
-    // THINK - Use intelligent fallback system (reliable for demo)
-    console.log("🧠 Using intelligent fallback system for reliable demo");
-    const finalPlan = createFallbackPlan(message);
-
-    // Uncomment below to try LLM (when API is stable)
-    /*
     console.log("🧠 Attempting LLM call for THINK phase...");
     const plan = await getPlanFromLLM(
       `Parse this query and create filters for a candidate database.
