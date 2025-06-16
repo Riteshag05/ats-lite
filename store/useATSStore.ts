@@ -28,7 +28,7 @@ interface ATSState {
   setCandidates: (c: Candidate[]) => void;
   setFiltered: (c: Candidate[]) => void;
   setRanked: (c: Candidate[]) => void;
-  setPlan: (p: MCPPlan) => void;
+  setPlan: (p: MCPPlan | null) => void;
   setSummary: (s: string) => void;
   setLoading: (v: boolean) => void;
 }

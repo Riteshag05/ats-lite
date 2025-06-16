@@ -95,13 +95,6 @@ export async function POST(req: Request) {
 
     // THINK - Try LLM first, fallback if needed
     const headers = Object.keys(allCandidates[0]);
-    const sampleCandidate = allCandidates[0];
-    const sampleData = {
-      title: sampleCandidate.title,
-      location: sampleCandidate.location,
-      skills: sampleCandidate.skills?.split(';').slice(0, 3).join(', '),
-      years_experience: sampleCandidate.years_experience
-    };
 
     console.log("🧠 Attempting LLM call for THINK phase...");
     const plan = await getPlanFromLLM(

@@ -96,6 +96,7 @@ export default function HomePage() {
   const [particleTrigger, setParticleTrigger] = useState(false);
   const [particlePos, setParticlePos] = useState({ x: 0, y: 0 });
   const [isTimelineCollapsed, setIsTimelineCollapsed] = useState(false);
+  const [streamedCandidatesCount, setStreamedCandidatesCount] = useState(0);
   const [timelineSteps, setTimelineSteps] = useState<TimelineStep[]>([
     { id: 1, title: "🧠 Think: Analyzing query...", status: 'pending' },
     { id: 2, title: "🎯 Act 1: Filtering candidates...", status: 'pending' },
@@ -191,10 +192,44 @@ export default function HomePage() {
     });
   }, [loading, plan, filtered, ranked]);
 
+  const candidatesToShow = showAllCandidates ? ranked : ranked.slice(0, 5);
+  const hasMoreCandidates = ranked.length > 5;
+
+  // Stream candidates progressively when ranked results change
+  useEffect(() => {
+    if (ranked.length > 0) {
+      setStreamedCandidatesCount(0);
+      const totalToShow = candidatesToShow.length;
+      
+      // Stream candidates one by one
+      const streamInterval = setInterval(() => {
+        setStreamedCandidatesCount(prev => {
+          const next = prev + 1;
+          if (next >= totalToShow) {
+            clearInterval(streamInterval);
+          }
+          return next;
+        });
+      }, 200); // 200ms delay between each candidate
+
+      return () => clearInterval(streamInterval);
+    }
+  }, [ranked, candidatesToShow.length]);
+
+  // Reset streaming when starting new search
   const handleSubmit = async () => {
     if (!message.trim()) return;
     
     setShowAllCandidates(false);
+    setStreamedCandidatesCount(0); // Reset streaming
+    
+    // IMMEDIATELY clear previous results to stop streaming
+    const { setSummary, setFiltered, setRanked, setPlan } = useATSStore.getState();
+    setSummary(""); // Stop previous AI summary immediately
+    setFiltered([]);
+    setRanked([]);
+    setPlan(null);
+    
     setTimelineSteps([
       { id: 1, title: "🧠 Think: Analyzing query...", status: 'pending' },
       { id: 2, title: "🎯 Act 1: Filtering candidates...", status: 'pending' },
@@ -204,9 +239,6 @@ export default function HomePage() {
     
     await runMCP(message);
   };
-
-  const candidatesToShow = showAllCandidates ? ranked : ranked.slice(0, 5);
-  const hasMoreCandidates = ranked.length > 5;
 
   const formatSalary = (salary?: string) => {
     if (!salary) return null;
@@ -464,10 +496,13 @@ export default function HomePage() {
                         </span>
                       </h3>
                       
-                      {/* RESTORED Show Top 5 button */}
+                      {/* Show All button with streaming reset */}
                       {hasMoreCandidates && (
                         <motion.button
-                          onClick={() => setShowAllCandidates(!showAllCandidates)}
+                          onClick={() => {
+                            setShowAllCandidates(!showAllCandidates);
+                            setStreamedCandidatesCount(0); // Reset streaming when toggling
+                          }}
                           className="btn-premium px-6 py-3 text-sm font-semibold"
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
@@ -477,19 +512,27 @@ export default function HomePage() {
                       )}
                     </div>
 
-                    {/* Ultra-optimized candidate list - no complex animations */}
+                    {/* Streaming candidate list - candidates appear progressively */}
                     <div className="space-y-4">
-                      {candidatesToShow.map((candidate, index) => {
+                      {candidatesToShow.slice(0, streamedCandidatesCount).map((candidate, index) => {
                         const skills = candidate.skills?.split(';').filter(Boolean) || [];
                         const topSkills = skills.slice(0, 4);
                         const remainingSkills = skills.length - 4;
                         const experienceLevel = getExperienceLevel(candidate.years_experience);
 
                         return (
-                          <div
+                          <motion.div
                             key={candidate.id}
                             className="candidate-card cursor-pointer"
                             onClick={() => setSelectedCandidate(candidate)}
+                            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ 
+                              type: "spring", 
+                              stiffness: 300, 
+                              damping: 25,
+                              duration: 0.4
+                            }}
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
@@ -497,9 +540,14 @@ export default function HomePage() {
                                   <h4 className="text-xl font-bold text-white">
                                     {candidate.full_name}
                                   </h4>
-                                  <span className="text-sm font-bold text-blue-300 bg-blue-500/20 px-3 py-1 rounded-full border border-blue-500/30">
+                                  <motion.span 
+                                    className="text-sm font-bold text-blue-300 bg-blue-500/20 px-3 py-1 rounded-full border border-blue-500/30"
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ delay: 0.2, type: "spring", stiffness: 400 }}
+                                  >
                                     #{index + 1}
-                                  </span>
+                                  </motion.span>
                                 </div>
                                 
                                 <p className="text-blue-400 font-semibold mb-3 text-lg">{candidate.title}</p>
@@ -527,37 +575,87 @@ export default function HomePage() {
                                   )}
                                 </div>
 
-                                <div className="flex flex-wrap gap-2">
-                                  {topSkills.map((skill) => (
-                                    <span
+                                <motion.div 
+                                  className="flex flex-wrap gap-2"
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  transition={{ delay: 0.3 }}
+                                >
+                                  {topSkills.map((skill, skillIndex) => (
+                                    <motion.span
                                       key={skill}
                                       className="px-3 py-1 bg-gray-700/50 text-gray-200 rounded-lg text-sm border border-gray-600/50"
+                                      initial={{ opacity: 0, scale: 0.8 }}
+                                      animate={{ opacity: 1, scale: 1 }}
+                                      transition={{ delay: 0.4 + skillIndex * 0.05 }}
                                     >
                                       {skill.trim()}
-                                    </span>
+                                    </motion.span>
                                   ))}
                                   {remainingSkills > 0 && (
-                                    <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-lg text-sm border border-purple-500/30">
+                                    <motion.span 
+                                      className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-lg text-sm border border-purple-500/30"
+                                      initial={{ opacity: 0, scale: 0.8 }}
+                                      animate={{ opacity: 1, scale: 1 }}
+                                      transition={{ delay: 0.4 + topSkills.length * 0.05 }}
+                                    >
                                       +{remainingSkills} more
-                                    </span>
+                                    </motion.span>
                                   )}
-                                </div>
+                                </motion.div>
                               </div>
 
                               <div className="flex flex-col items-end space-y-3">
-                                <span className={`px-3 py-1 rounded-lg text-xs font-bold ${experienceLevel.color}`}>
+                                <motion.span 
+                                  className={`px-3 py-1 rounded-lg text-xs font-bold ${experienceLevel.color}`}
+                                  initial={{ opacity: 0, x: 20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: 0.1 }}
+                                >
                                   {experienceLevel.label}
-                                </span>
+                                </motion.span>
                                 {candidate.availability_weeks && parseInt(candidate.availability_weeks) === 0 && (
-                                  <span className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-lg text-xs font-bold border border-emerald-500/30">
+                                  <motion.span 
+                                    className="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-lg text-xs font-bold border border-emerald-500/30"
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.2 }}
+                                  >
                                     Available now
-                                  </span>
+                                  </motion.span>
                                 )}
                               </div>
                             </div>
-                          </div>
+                          </motion.div>
                         );
                       })}
+                      
+                      {/* Loading indicator for remaining candidates */}
+                      {streamedCandidatesCount < candidatesToShow.length && (
+                        <motion.div
+                          className="candidate-card border-dashed border-2 border-blue-500/30 bg-blue-500/5"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <div className="flex items-center justify-center py-8">
+                            <motion.div 
+                              className="flex items-center space-x-3 text-blue-400"
+                              animate={{ opacity: [0.5, 1, 0.5] }}
+                              transition={{ duration: 1.5, repeat: Infinity }}
+                            >
+                              <motion.div
+                                className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full"
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                              />
+                              <span className="text-sm font-medium">
+                                Loading candidate {streamedCandidatesCount + 1} of {candidatesToShow.length}...
+                              </span>
+                            </motion.div>
+                          </div>
+                        </motion.div>
+                      )}
                     </div>
                   </motion.div>
                 )}
