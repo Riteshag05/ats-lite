@@ -23,6 +23,7 @@ interface ATSState {
   ranked: Candidate[];
   plan: MCPPlan | null;
   summary: string;
+  suggestions: string[];
   loading: boolean;
   setMessage: (m: string) => void;
   setCandidates: (c: Candidate[]) => void;
@@ -30,6 +31,7 @@ interface ATSState {
   setRanked: (c: Candidate[]) => void;
   setPlan: (p: MCPPlan | null) => void;
   setSummary: (s: string) => void;
+  setSuggestions: (s: string[]) => void;
   setLoading: (v: boolean) => void;
 }
 
@@ -40,6 +42,7 @@ export const useATSStore = create<ATSState>((set) => ({
   ranked: [],
   plan: null,
   summary: "",
+  suggestions: [],
   loading: false,
   setMessage: (message) => set({ message }),
   setCandidates: (candidates) => set({ candidates }),
@@ -47,5 +50,6 @@ export const useATSStore = create<ATSState>((set) => ({
   setRanked: (ranked) => set({ ranked }),
   setPlan: (plan) => set({ plan }),
   setSummary: (summary) => set({ summary }),
+  setSuggestions: (suggestions) => set({ suggestions }),
   setLoading: (loading) => set({ loading }),
 }));

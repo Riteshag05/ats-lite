@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { filterCandidates, rankCandidates } from "@/lib/ats";
 import { loadCandidates } from "@/lib/csv";
-import { getPlanFromLLM, getSummaryFromLLM } from "@/lib/openai"; // ✅ Enabled for AI functionality
+import { getPlanFromLLM, getSummaryFromLLM, getSmartSuggestionsFromLLM } from "@/lib/openai"; // ✅ Enabled for AI functionality
 
 // Fallback function when LLM fails
 function createFallbackPlan(message: string) {
@@ -160,11 +160,25 @@ Return JSON:
       summary = `No candidates found matching your criteria. The search looked for candidates with: ${JSON.stringify(finalPlan.filter)}`;
     }
 
+    // SUGGEST - Generate smart suggestions based on results
+    let suggestions: string[] = [];
+    if (ranked.length > 0) {
+      console.log("💡 Attempting AI suggestions generation...");
+      try {
+        suggestions = await getSmartSuggestionsFromLLM(message, ranked.length, top5);
+        console.log("✅ AI suggestions generated:", suggestions);
+      } catch (error) {
+        console.log("🔄 Suggestions failed, using fallbacks:", error);
+        suggestions = [];
+      }
+    }
+
     return NextResponse.json({
       plan: finalPlan,
       filtered,
       ranked,
       summary,
+      suggestions,
     });
   } catch (err) {
     console.error("[MCP ERROR]", err);

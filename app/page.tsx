@@ -9,6 +9,7 @@ import { useATSStore } from "@/store/useATSStore";
 import { runMCP } from "@/lib/mcp";
 import StreamingText from "@/components/StreamingText";
 import CleanSearchBox from "@/components/CleanSearchBox";
+import SmartSuggestions from "@/components/SmartSuggestions";
 
 interface TimelineStep {
   id: number;
@@ -88,6 +89,7 @@ export default function HomePage() {
     ranked,
     filtered,
     plan,
+    suggestions,
     loading,
   } = useATSStore();
 
@@ -224,11 +226,12 @@ export default function HomePage() {
     setStreamedCandidatesCount(0); // Reset streaming
     
     // IMMEDIATELY clear previous results to stop streaming
-    const { setSummary, setFiltered, setRanked, setPlan } = useATSStore.getState();
+    const { setSummary, setFiltered, setRanked, setPlan, setSuggestions } = useATSStore.getState();
     setSummary(""); // Stop previous AI summary immediately
     setFiltered([]);
     setRanked([]);
     setPlan(null);
+    setSuggestions([]); // Clear previous suggestions
     
     setTimelineSteps([
       { id: 1, title: "🧠 Think: Analyzing query...", status: 'pending' },
@@ -475,6 +478,20 @@ export default function HomePage() {
                     <div>
                       <StreamingText text={summary} speed={40} />
                     </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Smart Suggestions */}
+              <AnimatePresence>
+                {suggestions && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <SmartSuggestions suggestions={suggestions} />
                   </motion.div>
                 )}
               </AnimatePresence>

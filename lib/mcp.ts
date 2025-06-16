@@ -8,6 +8,7 @@ export async function runMCP(message: string) {
     setRanked,
     setPlan,
     setSummary,
+    setSuggestions,
     setLoading,
   } = useATSStore.getState();
 
@@ -22,15 +23,17 @@ export async function runMCP(message: string) {
 
     if (!res.ok) throw new Error("API call failed");
 
-    const { plan, filtered, ranked, summary } = await res.json();
+    const { plan, filtered, ranked, summary, suggestions } = await res.json();
 
     setPlan(plan);
     setFiltered(filtered);
     setRanked(ranked);
     setSummary(summary);
+    setSuggestions(suggestions || []);
   } catch (e) {
     console.error("runMCP error", e);
     setSummary("❌ LLM processing failed.");
+    setSuggestions([]);
   } finally {
     setLoading(false);
   }
