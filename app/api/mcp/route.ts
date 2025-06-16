@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { filterCandidates, rankCandidates } from "@/lib/ats";
 import { loadCandidates } from "@/lib/csv";
-// import { getPlanFromLLM, getSummaryFromLLM } from "@/lib/openai"; // ✅ Commented out for stable demo
+import { getPlanFromLLM, getSummaryFromLLM } from "@/lib/openai"; // ✅ Enabled for AI functionality
 
 // Fallback function when LLM fails
 function createFallbackPlan(message: string) {
@@ -93,12 +93,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No candidates found" }, { status: 500 });
     }
 
-    // THINK - Use intelligent fallback system (reliable for demo)
-    console.log("🧠 Using intelligent fallback system for reliable demo");
-    const finalPlan = createFallbackPlan(message);
-
-    // Uncomment below to try LLM (when API is stable)
-    /*
+    // THINK - Try LLM first, fallback if needed
     const headers = Object.keys(allCandidates[0]);
     const sampleCandidate = allCandidates[0];
     const sampleData = {
@@ -144,7 +139,6 @@ Return JSON:
     } else {
       console.log("✅ LLM successfully generated plan");
     }
-    */
 
     // ACT
     const filtered = filterCandidates(finalPlan.filter, allCandidates);
@@ -156,16 +150,8 @@ Return JSON:
     console.log("🎯 Filtered count:", filtered.length);
     console.log("🏆 Ranked IDs:", ranked.map((c) => c.id));
 
-    // SPEAK - Use simple summary (reliable for demo)
+    // SPEAK - Try LLM summary first
     let summary = "";
-    if (top5.length > 0) {
-      summary = createSimpleSummary(top5);
-    } else {
-      summary = `No candidates found matching your criteria. The search looked for candidates with: ${JSON.stringify(finalPlan.filter)}`;
-    }
-
-    // Uncomment below to try LLM summary (when API is stable)
-    /*
     if (top5.length > 0) {
       console.log("💬 Attempting LLM call for SPEAK phase...");
       const llmSummary = await getSummaryFromLLM(top5);
@@ -180,7 +166,6 @@ Return JSON:
     } else {
       summary = `No candidates found matching your criteria. The search looked for candidates with: ${JSON.stringify(finalPlan.filter)}`;
     }
-    */
 
     return NextResponse.json({
       plan: finalPlan,
